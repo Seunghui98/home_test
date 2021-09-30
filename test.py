@@ -1,20 +1,18 @@
 import requests
 import time
+import base64
 
 payload = {
-    "ServiceName": "hello-world",
+    "ServiceName": "pose_detection",
     "ServiceInfo": [
     {
         "ExecutionType": "container",
-        "ExecCmd": [
-            "docker",
-            "run",
-            "-v", "/var/run:/var/run:rw",
-            "hello-world"
-        ]
-    }],
-    "StatusCallbackURI": "http://localhost:8888/api/v1/services/notification"
+    }] 
 }
+start = time.time()
+with open('emergency.png', 'rb') as f:
+    im_b64 = base64.b64encode(f.read()).decode('utf8')
+
 
 headers = {}
 url = 'http://localhost:56001/api/v1/orchestration/services'
@@ -24,7 +22,19 @@ r = requests.post(url, json=payload, headers=headers)
 if r.ok:
     result = r.json()
     print(result)
-    url2 = result['RemoteTargetInfo']['Target']
-    print(url2)
-    respose = requests.get("http://"+url2+":3333/ping")
-    print(respose.json())
+    ip = result['RemoteTargetInfo']['Target']
+    print(ip)
+    imagejson = {'img_base64':im_b64}
+    headers = {}
+    url = 'http://'+ip+':3500/pose_detection'
+
+    r2 = requests.post(url, json=imagejson, headers=headers)
+
+    if r2.ok:
+        pose = r2.json()
+        print(pose)
+        print("time :", time.time() - start)
+    
+    
+    
+ 
